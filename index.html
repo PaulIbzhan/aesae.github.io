@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated AE & SAE Classification Using NLP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Brilliant Blues -->
+    <!-- Application Structure Plan: The SPA is structured as a narrative flow to maximize user engagement and understanding. It starts with a Hero section to introduce the topic. 'The Challenge' section visually demonstrates the problem with unstructured data. 'Our Solution' presents the core methodology as an interactive, step-by-step pipeline, allowing users to explore each stage. A 'Performance Dashboard' uses dynamic charts to showcase the model's effectiveness. An 'Interactive Demo' provides a hands-on experience, making the abstract process tangible. Finally, the 'Impact & Future Vision' section summarizes the project's value and next steps. This story-based approach was chosen over a static layout to guide the user logically from problem to solution to impact, enhancing comprehension and retention. -->
+    <!-- Visualization & Content Choices: 1. NLP Pipeline (Goal: Organize/Explain): An interactive flowchart using styled HTML and JS. Interaction: Clicking a step reveals details. Justification: Breaks down a complex process into digestible, self-paced chunks, superior to a static diagram. Method: HTML/Tailwind/JS. 2. Performance Metrics (Goal: Compare/Inform): A dynamic bar chart. Interaction: Hover tooltips. Justification: Bar charts provide an immediate visual comparison of key metrics. Library: Chart.js. 3. Confusion Matrix (Goal: Inform): A styled HTML grid. Justification: A clear, accessible, and non-graphical way to present classification results. Method: HTML/Tailwind. 4. Interactive Demo (Goal: Engage/Demonstrate): A text-input simulation. Interaction: User clicks a button to see text processed and classified. Justification: Provides a tangible "Aha!" moment by showing the pipeline in action. Method: Vanilla JS. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 400px;
+        }
+        @media (min-width: 640px) {
+            .chart-container {
+                height: 380px;
+            }
+        }
+        .pipeline-step {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .pipeline-step:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .pipeline-step.active {
+            background-color: #0077B6;
+            color: white;
+            border-color: #0077B6;
+        }
+        .nav-link {
+            transition: color 0.3s;
+        }
+        .nav-link:hover {
+            color: #0077B6;
+        }
+        .highlight {
+            background-color: #90E0EF;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800">AE/SAE Classification</h1>
+            <div class="hidden md:flex space-x-8">
+                <a href="#challenge" class="nav-link text-gray-600 font-medium">The Challenge</a>
+                <a href="#solution" class="nav-link text-gray-600 font-medium">Solution</a>
+                <a href="#performance" class="nav-link text-gray-600 font-medium">Performance</a>
+                <a href="#demo" class="nav-link text-gray-600 font-medium">Demo</a>
+                <a href="#impact" class="nav-link text-gray-600 font-medium">Impact</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="hero" class="bg-white py-20 md:py-32">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-4xl md:text-6xl font-bold text-gray-900 leading-tight">From Text to Triage</h2>
+                <p class="mt-4 text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">An interactive exploration of how Natural Language Processing (NLP) automates the classification of Adverse Events to enhance patient safety.</p>
+                <a href="#challenge" class="mt-8 inline-block bg-[#0077B6] text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-[#005a8d] transition-colors duration-300">Explore the Project</a>
+            </div>
+        </section>
+
+        <section id="challenge" class="py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl font-bold">The Pharmacovigilance Challenge</h3>
+                    <p class="mt-2 text-gray-600 max-w-2xl mx-auto">Timely and accurate reporting of Adverse Events (AE) and Serious Adverse Events (SAE) is critical for patient safety, but manual review is a major bottleneck.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                        <h4 class="font-bold text-xl mb-4">The Data Overload Problem</h4>
+                        <p class="text-gray-700">Safety reports are often buried in unstructured text like physician's notes and patient narratives. Manually sifting through this data is slow, expensive, and prone to human error.</p>
+                        <div class="mt-4 p-4 bg-gray-100 rounded-lg text-sm text-gray-600 italic">
+                            "Patient reported severe dizziness and nausea approximately 4 hours after the second dose of Drug-X. He was later admitted to the hospital due to persistent symptoms and observation for potential cardiac events. Discharged after 2 days. The event is considered serious and unexpected."
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-[#90E0EF] text-[#0077B6] flex items-center justify-center font-bold text-xl">1</div>
+                            <div class="ml-4">
+                                <h5 class="font-semibold">Slow Processing</h5>
+                                <p class="text-gray-600">Manual review delays the detection of critical safety signals.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-[#90E0EF] text-[#0077B6] flex items-center justify-center font-bold text-xl">2</div>
+                            <div class="ml-4">
+                                <h5 class="font-semibold">Inconsistent Classification</h5>
+                                <p class="text-gray-600">Subjectivity in review leads to inconsistent AE vs. SAE classification.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-[#90E0EF] text-[#0077B6] flex items-center justify-center font-bold text-xl">3</div>
+                            <div class="ml-4">
+                                <h5 class="font-semibold">High Cost</h5>
+                                <p class="text-gray-600">Requires significant human resources and time.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="solution" class="py-20 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl font-bold">Our Solution: An Automated NLP Pipeline</h3>
+                    <p class="mt-2 text-gray-600 max-w-2xl mx-auto">We developed an automated pipeline to process, analyze, and classify adverse event reports with speed and accuracy. Click on each step to learn more.</p>
+                </div>
+                <div class="flex flex-col md:flex-row justify-center items-start md:items-center space-y-4 md:space-y-0 md:space-x-4 mb-8">
+                    <div id="step-1" class="pipeline-step p-3 border-2 border-gray-300 rounded-lg text-center flex-1">Data Ingestion</div>
+                    <div class="text-2xl text-gray-400 self-center hidden md:block">→</div>
+                    <div id="step-2" class="pipeline-step p-3 border-2 border-gray-300 rounded-lg text-center flex-1">Pre-processing</div>
+                    <div class="text-2xl text-gray-400 self-center hidden md:block">→</div>
+                    <div id="step-3" class="pipeline-step p-3 border-2 border-gray-300 rounded-lg text-center flex-1">NER</div>
+                    <div class="text-2xl text-gray-400 self-center hidden md:block">→</div>
+                    <div id="step-4" class="pipeline-step p-3 border-2 border-gray-300 rounded-lg text-center flex-1">Standardization</div>
+                    <div class="text-2xl text-gray-400 self-center hidden md:block">→</div>
+                    <div id="step-5" class="pipeline-step p-3 border-2 border-gray-300 rounded-lg text-center flex-1">Feature Engineering</div>
+                    <div class="text-2xl text-gray-400 self-center hidden md:block">→</div>
+                    <div id="step-6" class="pipeline-step p-3 border-2 border-gray-300 rounded-lg text-center flex-1">Classification</div>
+                </div>
+                <div id="pipeline-details" class="mt-8 bg-gray-50 p-8 rounded-lg shadow-inner min-h-[150px] border">
+                    <h4 id="details-title" class="font-bold text-xl text-[#0077B6]">Select a step above</h4>
+                    <p id="details-text" class="mt-2 text-gray-700">The details for the selected pipeline step will appear here.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="performance" class="py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl font-bold">Performance Dashboard</h3>
+                    <p class="mt-2 text-gray-600">The model was evaluated on a test set of 5,000 anonymized narratives, achieving high performance across key metrics.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div class="bg-white p-6 rounded-lg shadow-md border">
+                        <h4 class="font-bold text-xl mb-4 text-center">Model Performance Metrics</h4>
+                        <div class="chart-container">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md border">
+                        <h4 class="font-bold text-xl mb-4 text-center">Classification Results (Confusion Matrix)</h4>
+                        <div class="grid grid-cols-3 gap-1 text-center font-medium">
+                            <div></div>
+                            <div class="p-2 bg-gray-200 rounded-t-lg">Predicted AE</div>
+                            <div class="p-2 bg-gray-200 rounded-t-lg">Predicted SAE</div>
+
+                            <div class="p-2 bg-gray-200 rounded-l-lg self-center">Actual AE</div>
+                            <div class="p-4 bg-green-100 text-green-800 rounded-lg">
+                                <div class="text-2xl font-bold">2850</div>
+                                <div class="text-sm">True Negative</div>
+                            </div>
+                            <div class="p-4 bg-red-100 text-red-800 rounded-lg">
+                                <div class="text-2xl font-bold">75</div>
+                                <div class="text-sm">False Positive</div>
+                            </div>
+
+                            <div class="p-2 bg-gray-200 rounded-l-lg self-center">Actual SAE</div>
+                            <div class="p-4 bg-red-100 text-red-800 rounded-lg">
+                                 <div class="text-2xl font-bold">50</div>
+                                 <div class="text-sm">False Negative</div>
+                            </div>
+                            <div class="p-4 bg-green-100 text-green-800 rounded-lg">
+                                <div class="text-2xl font-bold">2025</div>
+                                <div class="text-sm">True Positive</div>
+                            </div>
+                        </div>
+                         <p class="text-xs text-center mt-4 text-gray-500">This matrix shows the model's accuracy in distinguishing between AE and SAE cases. The green cells represent correct classifications.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="demo" class="py-20 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl font-bold">Interactive Demo</h3>
+                    <p class="mt-2 text-gray-600">See the pipeline in action. Press "Classify" to analyze the example clinical narrative below.</p>
+                </div>
+                <div class="max-w-4xl mx-auto">
+                    <div class="bg-gray-50 border rounded-lg p-6">
+                        <h4 class="font-semibold text-lg mb-2">Clinical Narrative Input</h4>
+                        <div id="demo-text-input" class="w-full p-4 border rounded-md bg-white min-h-[120px]">Patient was admitted to the hospital with severe chest pain following the second dose of Drug X. This event resulted in death and is considered directly related to the investigational product.</div>
+                    </div>
+                    <div class="text-center my-6">
+                        <button id="classify-btn" class="bg-[#0077B6] text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-[#005a8d] transition-colors duration-300">
+                            Classify Event
+                        </button>
+                    </div>
+                    <div id="demo-output" class="bg-gray-50 border rounded-lg p-6 hidden">
+                        <h4 class="font-semibold text-lg mb-4">Analysis Output</h4>
+                        <div class="space-y-4">
+                            <div>
+                                <h5 class="font-medium text-gray-500 text-sm">PROCESSED TEXT (NER)</h5>
+                                <p id="processed-text" class="p-4 bg-white border rounded-md"></p>
+                            </div>
+                            <div>
+                                <h5 class="font-medium text-gray-500 text-sm">CLASSIFICATION</h5>
+                                <p id="classification-result" class="text-2xl font-bold"></p>
+                            </div>
+                            <div>
+                                <h5 class="font-medium text-gray-500 text-sm">REASONING</h5>
+                                <p id="classification-reason" class="text-gray-700"></p>
+                            </div>
+                            <div>
+                                <h5 class="font-medium text-gray-500 text-sm">STANDARDIZED TERMS</h5>
+                                <div id="standardized-terms" class="flex space-x-4"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="impact" class="py-20">
+             <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl font-bold">Impact & Future Vision</h3>
+                    <p class="mt-2 text-gray-600">This automated approach promises to revolutionize pharmacovigilance, making it faster, more consistent, and more efficient.</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8 text-center">
+                    <div class="bg-white p-8 rounded-lg shadow-md border">
+                        <div class="text-4xl mb-4">🚀</div>
+                        <h4 class="font-bold text-xl mb-2">Accelerated Safety Monitoring</h4>
+                        <p class="text-gray-600">Dramatically reduce the time from event reporting to signal detection, enabling quicker regulatory action and improved patient outcomes.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-lg shadow-md border">
+                        <div class="text-4xl mb-4">🎯</div>
+                        <h4 class="font-bold text-xl mb-2">Enhanced Accuracy & Consistency</h4>
+                        <p class="text-gray-600">Eliminate human subjectivity to ensure that adverse events are classified consistently according to regulatory standards.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-lg shadow-md border">
+                        <div class="text-4xl mb-4">🌍</div>
+                        <h4 class="font-bold text-xl mb-2">Future Directions</h4>
+                        <p class="text-gray-600">Future work will focus on detecting causality, deploying this as a real-time tool, and expanding support for multiple languages.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2025 AE/SAE Classification Project. All rights reserved.</p>
+            <p class="text-sm text-gray-400 mt-2">A conceptual interactive report for research presentation.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const pipelineStepsData = {
+                'step-1': {
+                    title: 'Step 1: Data Ingestion',
+                    text: 'The process begins by ingesting raw, unstructured text from various sources like clinical trial narratives, electronic health records (EHRs), and patient safety reports.'
+                },
+                'step-2': {
+                    title: 'Step 2: Text Pre-processing',
+                    text: 'The raw text is cleaned to prepare it for analysis. This includes tasks like sentence segmentation, tokenization (breaking text into words), and removing common "stop words" that don\'t add meaning.'
+                },
+                'step-3': {
+                    title: 'Step 3: Named Entity Recognition (NER)',
+                    text: 'The model scans the cleaned text to identify and extract key medical concepts. This includes symptoms (e.g., "dizziness"), drug names, and outcomes (e.g., "hospitalization", "death").'
+                },
+                'step-4': {
+                    title: 'Step 4: Terminology Standardization',
+                    text: 'Extracted terms are mapped to a standardized medical vocabulary. We use MedDRA for adverse event terms and WHO-DRL for drug names to ensure consistency and regulatory compliance.'
+                },
+                'step-5': {
+                    title: 'Step 5: Feature Engineering',
+                    text: 'The system identifies specific words and phrases that indicate seriousness, such as "death," "hospitalized," or "life-threatening." It also handles negation to understand context (e.g., "no fever").'
+                },
+                'step-6': {
+                    title: 'Step 6: Classification Model',
+                    text: 'A machine learning model (e.g., a Support Vector Machine or a transformer model like BERT) analyzes the engineered features to make a final classification: either a standard Adverse Event (AE) or a Serious Adverse Event (SAE).'
+                }
+            };
+
+            const pipelineSteps = document.querySelectorAll('.pipeline-step');
+            const detailsTitle = document.getElementById('details-title');
+            const detailsText = document.getElementById('details-text');
+
+            pipelineSteps.forEach(step => {
+                step.addEventListener('click', () => {
+                    pipelineSteps.forEach(s => s.classList.remove('active'));
+                    step.classList.add('active');
+                    const stepData = pipelineStepsData[step.id];
+                    detailsTitle.textContent = stepData.title;
+                    detailsText.textContent = stepData.text;
+                });
+            });
+
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            const performanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Accuracy', 'Precision', 'Recall', 'F1-Score'],
+                    datasets: [{
+                        label: 'Model Performance',
+                        data: [97.5, 0.96, 0.97, 0.97],
+                        backgroundColor: [
+                            '#00B4D8',
+                            '#0077B6',
+                            '#90E0EF',
+                            '#03045E'
+                        ],
+                        borderColor: [
+                            '#00B4D8',
+                            '#0077B6',
+                            '#90E0EF',
+                            '#03045E'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1.0,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value * 100) + '%'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                             callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += (context.parsed.y * 100).toFixed(1) + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            const classifyBtn = document.getElementById('classify-btn');
+            const demoOutput = document.getElementById('demo-output');
+
+            classifyBtn.addEventListener('click', () => {
+                const inputText = document.getElementById('demo-text-input').textContent;
+                const processedTextEl = document.getElementById('processed-text');
+                const classificationResultEl = document.getElementById('classification-result');
+                const classificationReasonEl = document.getElementById('classification-reason');
+                const standardizedTermsEl = document.getElementById('standardized-terms');
+
+                const entities = {
+                    symptoms: ['chest pain'],
+                    outcomes: ['admitted to the hospital', 'death'],
+                    drugs: ['Drug X']
+                };
+
+                let highlightedText = inputText;
+                entities.symptoms.forEach(s => highlightedText = highlightedText.replace(s, `<span class="highlight text-blue-800">${s}</span>`));
+                entities.outcomes.forEach(o => highlightedText = highlightedText.replace(o, `<span class="highlight text-red-800">${o}</span>`));
+                entities.drugs.forEach(d => highlightedText = highlightedText.replace(d, `<span class="highlight text-green-800">${d}</span>`));
+                
+                processedTextEl.innerHTML = highlightedText;
+                
+                classificationResultEl.textContent = 'Serious Adverse Event (SAE)';
+                classificationResultEl.className = 'text-2xl font-bold text-red-600';
+
+                classificationReasonEl.textContent = 'The event was classified as serious due to the presence of keywords: "admitted to the hospital" and "death".';
+                
+                standardizedTermsEl.innerHTML = `
+                    <div class="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-1 rounded-full">MedDRA: Chest pain (10008497)</div>
+                    <div class="bg-red-100 text-red-800 text-sm font-medium px-2.5 py-1 rounded-full">MedDRA: Death (10011906)</div>
+                    <div class="bg-green-100 text-green-800 text-sm font-medium px-2.5 py-1 rounded-full">WHO-DRL: Drug X</div>
+                `;
+
+                demoOutput.classList.remove('hidden');
+            });
+        });
+    </script>
+</body>
+</html>
